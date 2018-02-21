@@ -184,7 +184,32 @@ class Trace :
     #################################################################################################
     # FUNCTIONS ASSOCIATED TO SPIKES IN THE TRACE
     #################################################################################################
-
+    
+    def detectSpikes_quickpy(self, threshold=0.0, ref=3.0):
+        
+        """
+        Detect action potentials by threshold crossing (parameter threshold, mV) from below (i.e. with dV/dt>0).
+        To avoid multiple detection of same spike due to noise, use an 'absolute refractory period' ref, in ms.
+        Fast, vectorized implementation using numpy.
+        """ 
+        
+        # Convert refractory period into index-based units
+        ref_ind = int(np.round(ref/self.dt))
+        
+        # Detect rising edges above threshold
+        positive_deriv = np.gradient(self.V) > 0.
+        above_thresh = self.V >= threshold
+        spks = np.where(positive_deriv & above_thresh)[0]
+        
+        # Remove points that reference the same spk
+        redundant_pts = np.where(np.diff(spks) <= ref_ind)[0] + 1
+        spks = np.delete(spks, redundant_pts)
+        
+        # Assign output
+        self.spks = spks
+        self.spks_flag = True
+        
+    
     def detectSpikes_python(self, threshold=0.0, ref=3.0):
         
         """
