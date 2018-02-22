@@ -1,10 +1,16 @@
+from warnings import warn
+
+import numpy as np
 import matplotlib.pyplot as plt
 import cPickle as pkl
+import quantities as pq
+from neo import AxonIO
 
 from SpikeTrainComparator import *
 from SpikingModel import *
 from Trace import *
 from AEC_Dummy import *
+import ReadIBW
 
 
 class Experiment :
@@ -58,70 +64,266 @@ class Experiment :
     # FUNCTIONS TO ADD TRACES TO THE EXPERIMENT
     ############################################################################################   
     
-    def setAECTrace(self, V, V_units, I, I_units, T, FILETYPE='Igor'):
+    @staticmethod
+    def _readIgor(V, V_units, I, I_units, T, dt):
+        
+        """
+        Internal method used to create Traces from Igor files.
+        
+        V : file address of recorded current
+        V_units : units in which recorded voltage is stored (for mV use 10**-3)
+        I : file address of input current
+        I_units : units in which input current is stored (for nA use 10**-9)
+        T : length of the recording (ms)
+        dt : timestep (ms)
+        
+        Returns a list containing a Trace instance with units mV, nA, and ms.
+        (A list is returned for consistency with Experiment._readABF.)
+        """
+        
+        V_rec = ReadIBW.read(V)
+        V_rec = np.array(V_rec[:int(T/dt)])*V_units/10**-3  # Convert to mV
+        
+        I = ReadIBW.read(I)
+        I = np.array(I[:int(T/dt)])*I_units/10**-9  # Convert to nA
+        
+        return [Trace(V_rec, I, T, dt)]
+        
+    
+    @staticmethod
+    def _readABF(fname, V_channel, I_channel, dt):
+        
+        """
+        Internal method used to create Traces from Axon Binary Format files.
+        
+        fname : file address
+        V_channel : index of channel that contains recorded voltage
+        I_channel : index of channel that contains injected current
+        dt : timestep of recording (only used to enforce consistency with Experiment)
+        
+        (Units are detected automatically.)
+        
+        Returns a list of Trace instances with units mV, nA, and ms.
+        """
+        
+        # Read in sweeps
+        sweeps = AxonIO(fname).read()[0].segments
+        
+        # Verify that V and I_channels are actually in V and A
+        base_units = lambda chan: chan.units.simplified.dimensionality
+        units = [base_units(chan) for chan in sweeps[0].analogsignals]
+        
+        if units[V_channel] != pq.V.simplified.dimensionality:
+            raise RuntimeError('V_channel ({}) unit dimensionality must be V;'
+                               ' got {} instead.'.format(
+                                       V_channel, units[V_channel]))
+        if units[I_channel] != pq.A.simplified.dimensionality:
+            raise RuntimeError('I_channel ({}) unit dimensionality must be A;'
+                               ' got {} instead.'.format(
+                                       I_channel, units[I_channel]))
+        
+        # Extract sampling rate from first sweep of V_channel
+        dt_tmp = 1./sweeps[0].analogsignals[V_channel].sampling_rate.rescale(pq.Hz)
+        dt_tmp = 1000. * float(dt_tmp) # Convert to ms
+        
+        # Verify that dt of recording is same as value passed to method
+        if dt_tmp != dt:
+            raise RuntimeError('Got unexpected dt = {}ms from file during ABF'
+                               ' import! (Expected {}ms.)'.format(dt_tmp, dt))
+        
+        # Initialize list to hold Trace objects
+        tr_list = []
+        
+        # Iterate over sweeps
+        for sweep in sweeps:
+            
+            # Convert to mV and nA
+            V_tmp = sweep.analogsignals[V_channel].rescale(pq.mV)
+            I_tmp = sweep.analogsignals[I_channel].rescale(pq.nA)
+            
+            # Strip units from Trace inputs
+            V_tmp = V_tmp.magnitude.flatten()
+            I_tmp = I_tmp.magnitude.flatten()
+            T_tmp = float(sweep.analogsignals[V_channel].duration.rescale(pq.ms))
+            
+            # Add Trace to list
+            tr_list.append(Trace(V_tmp, I_tmp, T_tmp, dt_tmp))
+            
+        return tr_list
+        
+    
+    @staticmethod
+    def _readArray(V, V_units, I, I_units, T, dt):
+        
+        """
+        Internal method used to create Traces from vectors.
+        Trims vectors to length T/dt and converts units to mV and nA before instantiating Trace.
+        
+        V : vector with recorded voltage
+        V_units : units in which the recorded voltage is stored (for mV use 10**-3)
+        I : vector with injected current
+        I_units : units in which the injected current is stored (for nA use 10**-9)
+        T : length of the recording (ms)
+        dt : timestep of the recording (ms)
+        
+        Returns a list containing a Trace instance with units mV, nA, and ms.
+        (A list is returned for consistency with Experiment._readABF.)
+        """
+        
+        V_rec   = np.array(V[:int(T/dt)])*V_units/10**-3  # Convert to mV
+        I       = np.array(I[:int(T/dt)])*I_units/10**-9  # Convert to nA
+        
+        return [Trace(V_rec, I, T, dt)]
+    
+    
+    def _createTraces(self, FILETYPE='Axon', **kwargs):
+        
+        """
+        Internal method used to create Traces from files or vectors.
+        
+        Selects the appropriate _readX staticmethod based on FILETYPE and verifies that correct arguments have been provided before creating a list of traces.
+        
+        See help for Experiment._readIgor, Experiment._readABF, and Experiment._readArray methods for more information on which arguments to provide.
+        """
+        
+        if FILETYPE=='Axon':
+            
+            # Check for required arguments
+            required_kwargs = ['fname', 'V_channel', 'I_channel']
+            if not all([kw in kwargs.keys() for kw in required_kwargs]) :
+                raise TypeError(', '.join(required_kwargs) + ' must be'
+                                ' supplied as kwargs for Axon FILETYPE.')
+            
+            # Warn user about unused arguments
+            unused_kwargs = [
+                    kw for kw in kwargs.keys() if kw not in required_kwargs]
+            if len(unused_kwargs) > 0 :
+                warn(RuntimeWarning(', '.join(unused_kwargs) + ' kwargs are not'
+                                    ' required for Axon FILETYPE and will not'
+                                    ' be used.'))
+            
+            # Read in file using protected static method
+            tr_list_tmp = self._readABF(
+                    kwargs['fname'], 
+                    kwargs['V_channel'], 
+                    kwargs['I_channel'],
+                    self.dt)
+            
+            return tr_list_tmp
+            
+        elif FILETYPE=='Igor':
+            
+            # Check for required arguments
+            required_kwargs = ['V', 'V_units', 'I', 'I_units', 'T']
+            if not all([kw in kwargs.keys() for kw in required_kwargs]) :
+                raise TypeError(', '.join(required_kwargs) + 'must be supplied'
+                                ' as kwargs for Igor FILETYPE.')
+            
+            # Warn user about unused arguments
+            unused_kwargs = [
+                    kw for kw in kwargs.keys() if kw not in required_kwargs]
+            if len(unused_kwargs) > 0 :
+                warn(RuntimeWarning(', '.join(unused_kwargs) + ' kwargs are not'
+                                    ' required for Igor FILETYPE and will not'
+                                    ' be used.'))
+                
+            tr_list_tmp = self._readIgor(
+                    kwargs['V'],
+                    kwargs['V_units'],
+                    kwargs['I'],
+                    kwargs['I_units'],
+                    kwargs['T'],
+                    self.dt)
+            
+            return tr_list_tmp
+        
+        elif FILETYPE=='Array':
+            
+            # Check for required arguments
+            required_kwargs = ['V', 'V_units', 'I', 'I_units', 'T', 'dt']
+            if not all([kw in kwargs.keys() for kw in required_kwargs]) :
+                raise TypeError(', '.join(required_kwargs) + 'must be supplied'
+                                'as kwargs for Array FILETYPE.')
+                
+            # Warn user about unused kwargs
+            unused_kwargs = [
+                    kw for kw in kwargs.keys() if kw not in required_kwargs]
+            if len(unused_kwargs) > 0 :
+                warn(RuntimeWarning(', '.join(unused_kwargs) + ' kwargs are not'
+                                    ' required for Array FILETYPE and will not'
+                                    ' be used.'))
+            
+            tr_list_tmp = self._readArray(
+                    kwargs['V'],
+                    kwargs['V_units'],
+                    kwargs['I'],
+                    kwargs['I_units'],
+                    kwargs['T'],
+                    self.dt)
+            
+            return tr_list_tmp
+        
+        else:
+            raise ValueError('Expected one of Axon, Igor, or Array for'
+                             ' FILETYPE. Got {} instead.'.format(FILETYPE))
+        
+    
+    
+    def setAECTrace(self, FILETYPE='Axon', **kwargs):
     
         """
         Set AEC trace to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
     
         print "Set AEC trace..."
-        trace_tmp = Trace( V, V_units, I, I_units, T, self.dt, FILETYPE=FILETYPE)
-        self.AEC_trace = trace_tmp
-
-        return trace_tmp
+        
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
+        
+        if len(tr_list_tmp) > 1:
+            warn(RuntimeWarning('More than one sweep found in AEC file!'
+                                'Proceeding using only first sweep.'))
+        
+        self.AEC_trace = tr_list_tmp[0]
+        
+        return tr_list_tmp[0]
     
     
-    def addTrainingSetTrace(self, V, V_units, I, I_units, T, FILETYPE='Igor'):
+    def addTrainingSetTrace(self, FILETYPE='Axon', **kwargs):
     
         """
-        Add training set trace to experiment.
+        Add one or more training set traces to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
         
         print "Add Training Set trace..."
-        trace_tmp = Trace( V, V_units, I, I_units, T, self.dt, FILETYPE=FILETYPE)
-        self.trainingset_traces.append( trace_tmp )
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
+        self.trainingset_traces.extend( tr_list_tmp )
 
-        return trace_tmp
+        return tr_list_tmp
 
 
-    def addTestSetTrace(self, V, V_units, I, I_units, T, FILETYPE='Igor'):
+    def addTestSetTrace(self, FILETYPE='Axon', **kwargs):
         
         """
-        Add test set trace to experiment.
+        Add one or more test set traces to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
    
         print "Add Test Set trace..."
-        trace_tmp = Trace( V, V_units, I, I_units, T, self.dt, FILETYPE=FILETYPE)    
-        self.testset_traces.append( trace_tmp )
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
+        self.testset_traces.extend( tr_list_tmp )
 
-        return trace_tmp
+        return tr_list_tmp
     
     
 

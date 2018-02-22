@@ -1,10 +1,9 @@
+from warnings import warn
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import weave
-
-import ReadIBW
-
 
 
 class Trace :
@@ -14,54 +13,39 @@ class Trace :
     A Trace contains the experimental data acquired during a single current-clamp injection (e.g., the training set injection, or one repetition of the test set injections) 
     """
 
-    def __init__(self, V, V_units, I, I_units, T, dt, FILETYPE='Igor'):
+    def __init__(self, V, I, T, dt):
         
         """
-        V_units: specify in Volts the units of the experiment. For example if the orignial data are stored in mV, then use V_units = 10**-3.
-        I_units: specify in Ampere the units for the input current (see V_units).
-        FILETYPE:
-        - Igor: V and I should contain the path to .ibw files containing the data (V=voltage trace, I=current trace)
-        - Array: V and I should be python vectors
+        V : vector with recorded voltage (mV)
+        I : vector with injected current (nA)
+        T : length of the recording (ms)
+        dt : timestep of recording (ms)
         """
         
-        self.T     = T                         # ms, duration of the recording    
-        self.dt    = dt                        # ms, timestep
-        self.I     = 0                         # nA, subthreshold input current
-        self.V_rec = 0                         # mV, recorded membrane potential   
-
-        self.AEC_flag    = False               # Has the trace been preprocessed with AEC?
-        self.V           = 0                   # mV, membrane potential (after AEC)
+        # Perform input checks
+        if len(V) != len(I):
+            raise ValueError('Could not create Trace using V and I with non-'
+                             'identical lengths {} and {}.'.format(
+                                     len(V), len(I)))
+        if len(V) != int(np.round(T / dt)):
+            warn(RuntimeWarning('V array is not of length T/dt; expected {}, ' 
+                                'got {}.'.format(int(np.round(T/dt)), len(V))))
+        
+        # Initialize main attributes related to recording
+        self.V_rec = np.array(V, dtype = 'double')                         # mV, recorded voltage (before AEC)
+        self.V     = self.V_rec                                            # mV, voltage (after AEC)
+        self.I     = np.array(I, dtype = 'double')                         # nA, injected current
+        self.T     = T                                                     # ms, duration of the recording    
+        self.dt    = dt                                                    # ms, timestep
+        
+        # Initialize flags
+        self.AEC_flag    = False                                           # Has the trace been preprocessed with AEC?
         
         self.spks_flag   = False               # Do spikes have been detected?
         self.spks        = 0                   # spike indices stored in indices (and not in ms!)  
                 
         self.useTrace    = True                # if false this trace will be neglected while fitting spiking models to data        
-        self.ROI         = [[0.0,T]]           # ms, list of intervals defining the region of the trace that has to be used for fitting
-
-    
-             
-        # LOAD EXPERIMENTAL DATA FROM IGOR FILE (V AND I SHOULD COTAIN PATH OF DATA FILES)
-        if FILETYPE=='Igor' :
-                        
-            V_rec       = ReadIBW.read(V)
-            self.V_rec  = np.array(V_rec[:int(T/self.dt)])*V_units/10**-3        # convert voltage trace to mV
-                        
-            I           = ReadIBW.read(I)
-            self.I     = np.array(I[:int(T/self.dt)])*I_units/10**-9             # convert input current trace to nA  
-
-
-        # LOAD EXPERIMENTAL DATA FROM VECTOR (V AND I SHOULD COTAIN ARRAYS OR LISTS)
-
-        if FILETYPE=='Array' :
-                    
-            self.V_rec = np.array(V[:int(T/self.dt)])*V_units/10**-3        # set mV
-            self.I     = np.array(I[:int(T/self.dt)])*I_units/10**-9        # set nA 
-
-
-        self.V_rec = np.array(self.V_rec,dtype="double")
-        self.I     = np.array(self.I,dtype="double")
-        self.V     = self.V_rec
-        self.ROI   = [ [0, len(self.V_rec)*self.dt] ]                       # by default everything is ROI
+        self.ROI   = [ [0, len(self.V_rec)*self.dt] ] # List of intervals to be used for fitting; includes the whole trace by default
     
     
     
