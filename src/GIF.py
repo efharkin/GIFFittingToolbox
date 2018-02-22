@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import numpy as np
 
-from scipy import weave
+import weave
 from numpy.linalg import inv
 
 from ThresholdModel import *

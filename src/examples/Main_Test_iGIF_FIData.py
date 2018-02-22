@@ -57,15 +57,33 @@ experiment = Experiment.load(PATH + "FIdata.pkl")
 
 
 # Load test set data
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1009.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1009.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1010.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1010.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1011.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1011.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1012.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1012.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1013.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1013.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1014.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1014.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1015.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1015.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1016.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1016.ibw', 1.0, 20000.0, FILETYPE='Igor')
-experiment.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1017.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1017.ibw', 1.0, 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1009.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1009.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1010.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1010.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1011.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1011.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1012.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1012.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1013.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1013.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1014.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1014.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1015.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1015.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1016.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1016.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
+experiment.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1017.ibw', V_units = 1.0, 
+                           I = PATH + 'Cell3_Ger1Test_ch3_1017.ibw', I_units = 1.0, 
+                           T = 20000.0, FILETYPE='Igor')
 
        
 #################################################################################################
