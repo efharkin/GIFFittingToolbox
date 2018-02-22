@@ -169,7 +169,7 @@ class Trace :
     # FUNCTIONS ASSOCIATED TO SPIKES IN THE TRACE
     #################################################################################################
     
-    def detectSpikes_quickpy(self, threshold=0.0, ref=3.0):
+    def detectSpikes(self, threshold=0.0, ref=3.0):
         
         """
         Detect action potentials by threshold crossing (parameter threshold, mV) from below (i.e. with dV/dt>0).
@@ -219,7 +219,7 @@ class Trace :
         self.spks_flag = True
 
 
-    def detectSpikes(self, threshold=0.0, ref=3.0):
+    def detectSpikes_weave(self, threshold=0.0, ref=3.0):
         
         """
         Detect action potentials by threshold crossing (parameter threshold, mV) from below (i.e. with dV/dt>0).

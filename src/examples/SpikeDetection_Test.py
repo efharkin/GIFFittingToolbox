@@ -105,11 +105,11 @@ myExp.performAEC()
 # Detect spks using weave
 spks_weave = []
 
-myExp.trainingset_traces[0].detectSpikes()
+myExp.trainingset_traces[0].detectSpikes_weave()
 spks_weave.append(myExp.trainingset_traces[0].spks.copy())
 
 for tr in myExp.testset_traces:
-    tr.detectSpikes()
+    tr.detectSpikes_weave()
     spks_weave.append(tr.spks.copy())
 
 # Detect spks using python
@@ -125,11 +125,11 @@ for tr in myExp.testset_traces:
 # Detect spks using new numpy method
 spks_quickpy = []
 
-myExp.trainingset_traces[0].detectSpikes_quickpy()
+myExp.trainingset_traces[0].detectSpikes()
 spks_quickpy.append(myExp.trainingset_traces[0].spks.copy())
 
 for tr in myExp.testset_traces:
-    tr.detectSpikes_quickpy()
+    tr.detectSpikes()
     spks_quickpy.append(tr.spks.copy())
 
 
@@ -157,10 +157,10 @@ print('Weave and numpy methods produce identical output: {}'.format(
 
 # Print speed tests
 print('\nTiming weave method...')
-%timeit myExp.trainingset_traces[0].detectSpikes()          # ~8ms
+%timeit myExp.trainingset_traces[0].detectSpikes_weave()    # ~8ms
 
 print('\nTiming base python method...')
 %timeit myExp.trainingset_traces[0].detectSpikes_python()   # ~740ms
 
 print('\nTiming numpy method...')
-%timeit myExp.trainingset_traces[0].detectSpikes_quickpy()  # ~1ms
+%timeit myExp.trainingset_traces[0].detectSpikes()          # ~1ms
