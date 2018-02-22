@@ -14,15 +14,21 @@ This file tests the numpy-vectorized method for spike detection.
 
 
 First, this test file shows that the numpy method produces identical output to 
-the original weave and python methods across multiple spiketrains.
+the original weave and python methods across multiple spiketrains under normal
+conditions.*
 
-Second, speed tests show that the numpy method is only marginally (~1ms) slower
-than the weave method, and ~100X faster than the original python method.
+Second, speed tests show that the numpy method is ~8X faster than the weave
+method, and ~750X faster than the original python method.
 
 
 Because weave is deprecated in python 3 while numpy continues to be 
 well-supported, using the numpy method by default will improve the 
 maintainability of the code without sacrificing performance.
+
+
+*Note: It is possible to obtain different results using the new and old methods
+if tref is set to be longer than the shortest (true) inter-spike-intervals in 
+the recording. Obviously, this should never happen.
 """
 
 
@@ -151,10 +157,10 @@ print('Weave and numpy methods produce identical output: {}'.format(
 
 # Print speed tests
 print('\nTiming weave method...')
-%timeit myExp.trainingset_traces[0].detectSpikes()          # ~7.7ms
+%timeit myExp.trainingset_traces[0].detectSpikes()          # ~8ms
 
 print('\nTiming base python method...')
 %timeit myExp.trainingset_traces[0].detectSpikes_python()   # ~740ms
 
 print('\nTiming numpy method...')
-%timeit myExp.trainingset_traces[0].detectSpikes_quickpy()  # ~8.4ms
+%timeit myExp.trainingset_traces[0].detectSpikes_quickpy()  # ~1ms

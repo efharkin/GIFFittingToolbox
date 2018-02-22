@@ -180,10 +180,14 @@ class Trace :
         # Convert refractory period into index-based units
         ref_ind = int(np.round(ref/self.dt))
         
-        # Detect rising edges above threshold
-        positive_deriv = np.gradient(self.V) > 0.
+        # Detect points above or below threshold to get rising edges
         above_thresh = self.V >= threshold
-        spks = np.where(positive_deriv & above_thresh)[0]
+        below_thresh = ~above_thresh
+        
+        rising_edges = above_thresh[1:] & below_thresh[:-1]
+        
+        # Convert rising edges to spk inds
+        spks = np.where(rising_edges)[0] + 1
         
         # Remove points that reference the same spk
         redundant_pts = np.where(np.diff(spks) <= ref_ind)[0] + 1
