@@ -77,7 +77,8 @@ class Experiment :
         T : length of the recording (ms)
         dt : timestep (ms)
         
-        Returns a Trace instance with units mV, nA, and ms.
+        Returns a list containing a Trace instance with units mV, nA, and ms.
+        (A list is returned for consistency with Experiment._readABF.)
         """
         
         V_rec = ReadIBW.read(V)
@@ -86,7 +87,7 @@ class Experiment :
         I = ReadIBW.read(I)
         I = np.array(I[:int(T/dt)])*I_units/10**-9  # Convert to nA
         
-        return Trace(V_rec, I, T, dt)
+        return [Trace(V_rec, I, T, dt)]
         
     
     @staticmethod
@@ -165,16 +166,17 @@ class Experiment :
         T : length of the recording (ms)
         dt : timestep of the recording (ms)
         
-        Returns a Trace instance with units mV, nA, and ms.
+        Returns a list containing a Trace instance with units mV, nA, and ms.
+        (A list is returned for consistency with Experiment._readABF.)
         """
         
         V_rec   = np.array(V[:int(T/dt)])*V_units/10**-3  # Convert to mV
         I       = np.array(I[:int(T/dt)])*I_units/10**-9  # Convert to nA
         
-        return Trace(V_rec, I, T, dt)
+        return [Trace(V_rec, I, T, dt)]
     
     
-    def _createTrace(self, FILETYPE='Axon', **kwargs):
+    def _createTraces(self, FILETYPE='Axon', **kwargs):
         
         """
         Internal method used to create Traces from files or vectors.
@@ -225,7 +227,7 @@ class Experiment :
                                     ' required for Igor FILETYPE and will not'
                                     ' be used.'))
                 
-            trace_tmp = self._readIgor(
+            tr_list_tmp = self._readIgor(
                     kwargs['V'],
                     kwargs['V_units'],
                     kwargs['I'],
@@ -233,7 +235,7 @@ class Experiment :
                     kwargs['T'],
                     self.dt)
             
-            return trace_tmp
+            return tr_list_tmp
         
         elif FILETYPE=='Array':
             
@@ -251,7 +253,7 @@ class Experiment :
                                     ' required for Array FILETYPE and will not'
                                     ' be used.'))
             
-            trace_tmp = self._readArray(
+            tr_list_tmp = self._readArray(
                     kwargs['V'],
                     kwargs['V_units'],
                     kwargs['I'],
@@ -259,7 +261,7 @@ class Experiment :
                     kwargs['T'],
                     self.dt)
             
-            return trace_tmp
+            return tr_list_tmp
         
         else:
             raise ValueError('Expected one of Axon, Igor, or Array for'
@@ -279,14 +281,15 @@ class Experiment :
     
         print "Set AEC trace..."
         
-        trace_tmp = self._createTrace(FILETYPE, **kwargs)
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
         
-        if type(trace_tmp) is list:
-            trace_tmp = trace_tmp[0]
+        if len(tr_list_tmp) > 1:
+            warn(RuntimeWarning('More than one sweep found in AEC file!'
+                                'Proceeding using only first sweep.'))
         
-        self.AEC_trace = trace_tmp
+        self.AEC_trace = tr_list_tmp[0]
         
-        return trace_tmp
+        return tr_list_tmp[0]
     
     
     def addTrainingSetTrace(self, FILETYPE='Axon', **kwargs):
@@ -300,10 +303,10 @@ class Experiment :
         """
         
         print "Add Training Set trace..."
-        trace_tmp = self._createTrace(FILETYPE, **kwargs)
-        self.trainingset_traces.extend( trace_tmp )
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
+        self.trainingset_traces.extend( tr_list_tmp )
 
-        return trace_tmp
+        return tr_list_tmp
 
 
     def addTestSetTrace(self, FILETYPE='Axon', **kwargs):
@@ -317,10 +320,10 @@ class Experiment :
         """
    
         print "Add Test Set trace..."
-        trace_tmp = self._createTrace(FILETYPE, **kwargs)
-        self.testset_traces.extend( trace_tmp )
+        tr_list_tmp = self._createTraces(FILETYPE, **kwargs)
+        self.testset_traces.extend( tr_list_tmp )
 
-        return trace_tmp
+        return tr_list_tmp
     
     
 
