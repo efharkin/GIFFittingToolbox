@@ -74,6 +74,8 @@ class Experiment :
         I_units : units in which input current is stored (for nA use 10**-9)
         T : length of the recording (ms)
         dt : timestep (ms)
+        
+        Returns a Trace instance with units mV, nA, and ms.
         """
         
         V_rec = ReadIBW.read(V)
@@ -94,9 +96,11 @@ class Experiment :
         fname : file address
         V_channel : index of channel that contains recorded voltage
         I_channel : index of channel that contains injected current
-        dt : timestep of recording (used to enforce consistency with Experiment)
+        dt : timestep of recording (only used to enforce consistency with Experiment)
         
-        Units are automatically detected and converted to mV, nA, and ms.
+        (Units are detected automatically.)
+        
+        Returns a list of Trace instances with units mV, nA, and ms.
         """
         
         # Read in sweeps
@@ -150,6 +154,16 @@ class Experiment :
         
         """
         Internal method used to create Traces from vectors.
+        Trims vectors to length T/dt and converts units to mV and nA before instantiating Trace.
+        
+        V : vector with recorded voltage
+        V_units : units in which the recorded voltage is stored (for mV use 10**-3)
+        I : vector with injected current
+        I_units : units in which the injected current is stored (for nA use 10**-9)
+        T : length of the recording (ms)
+        dt : timestep of the recording (ms)
+        
+        Returns a Trace instance with units mV, nA, and ms.
         """
         
         V_rec   = np.array(V[:int(T/dt)])*V_units/10**-3  # Convert to mV
@@ -164,6 +178,8 @@ class Experiment :
         Internal method used to create Traces from files or vectors.
         
         Selects the appropriate _readX staticmethod based on FILETYPE and verifies that correct arguments have been provided before creating a list of traces.
+        
+        See help for Experiment._readIgor, Experiment._readABF, and Experiment._readArray methods for more information on which arguments to provide.
         """
         
         if FILETYPE=='Axon':
@@ -254,14 +270,9 @@ class Experiment :
         """
         Set AEC trace to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
     
         print "Set AEC trace..."
@@ -279,16 +290,11 @@ class Experiment :
     def addTrainingSetTrace(self, FILETYPE='Axon', **kwargs):
     
         """
-        Add training set trace to experiment.
+        Add one or more training set traces to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
         
         print "Add Training Set trace..."
@@ -301,16 +307,11 @@ class Experiment :
     def addTestSetTrace(self, FILETYPE='Axon', **kwargs):
         
         """
-        Add test set trace to experiment.
+        Add one or more test set traces to experiment.
         
-        V : recorded voltage (either file address or numpy array depending on FILETYPE)
-        V_units : units in which recorded voltage is stored (for mV use 10**-3)
-        I : input current (either file address or numpy array depending on FILETYPE)
-        I_units : units in which the input current is stored (for nA use 10**-9)
-        FILETYPE: either "Igor" or "Array"
+        FILETYPE : `Axon`, `Igor`, or `Array`
         
-        For Igor Pro files use 'Igor'. In this case V and I must contain path and filename of the file in which the data are stored.
-        For numpy Array data use "Array". In this case V and I must be numpy arrays 
+        Additional required arguments depend on which FILETYPE is selected. See Experiment._readABF, Experiment._readIgor, and Experiment._readArray for more information.
         """
    
         print "Add Test Set trace..."

@@ -20,11 +20,10 @@ class Trace :
     def __init__(self, V, I, T, dt):
         
         """
-        V_units: specify in Volts the units of the experiment. For example if the orignial data are stored in mV, then use V_units = 10**-3.
-        I_units: specify in Ampere the units for the input current (see V_units).
-        FILETYPE:
-        - Igor: V and I should contain the path to .ibw files containing the data (V=voltage trace, I=current trace)
-        - Array: V and I should be python vectors
+        V : vector with recorded voltage (mV)
+        I : vector with injected current (nA)
+        T : length of the recording (ms)
+        dt : timestep of recording (ms)
         """
         
         # Perform input checks
