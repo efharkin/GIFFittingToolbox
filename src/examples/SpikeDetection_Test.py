@@ -4,6 +4,9 @@ sys.path.append('../')
 import numpy as np
 
 from Experiment import *
+from AEC_Badel import *
+from Filter_Rect_LogSpaced import *
+from Filter_Rect_LinSpaced import *
 
 
 """
@@ -11,7 +14,7 @@ This file tests the numpy-vectorized method for spike detection.
 
 
 First, this test file shows that the numpy method produces identical output to 
-the original weave and python methods.
+the original weave and python methods across multiple spiketrains.
 
 Second, speed tests show that the numpy method is only marginally (~1ms) slower
 than the weave method, and ~100X faster than the original python method.
@@ -22,32 +25,129 @@ well-supported, using the numpy method by default will improve the
 maintainability of the code without sacrificing performance.
 """
 
-PATH = '../../data/gif_test/'
+
+############################################################################################################
+# STEP 1: LOAD EXPERIMENTAL DATA
+############################################################################################################
 
 myExp = Experiment('spkDetectionTest', 0.1)
+
+PATH = '../../data/gif_test/'
+
+# Load AEC data
+myExp.setAECTrace(V = PATH + 'Cell3_Ger1Elec_ch2_1007.ibw', V_units = 1.0, 
+                  I = PATH + 'Cell3_Ger1Elec_ch3_1007.ibw', I_units = 1.0, 
+                  T = 10000.0, FILETYPE='Igor')
+
+# Load training set data
 myExp.addTrainingSetTrace(V = PATH + 'Cell3_Ger1Training_ch2_1008.ibw', V_units = 1.0,
                           I = PATH + 'Cell3_Ger1Training_ch3_1008.ibw', I_units = 1.0, 
                           T = 120000.0, FILETYPE='Igor')
 
+# Load test set data
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1009.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1009.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1010.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1010.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1011.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1011.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1012.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1012.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1013.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1013.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1014.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1014.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1015.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1015.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1016.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1016.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1017.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1017.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+
+
+############################################################################################################
+# STEP 2: ACTIVE ELECTRODE COMPENSATION
+############################################################################################################
+
+# Create new object to perform AEC
+myAEC = AEC_Badel(myExp.dt)
+
+# Define metaparametres
+myAEC.K_opt.setMetaParameters(length=150.0, binsize_lb=myExp.dt, 
+                              binsize_ub=2.0, slope=30.0, clamp_period=1.0)
+myAEC.p_expFitRange = [3.0,150.0]  
+myAEC.p_nbRep = 15     
+
+# Assign myAEC to myExp and compensate the voltage recordings
+myExp.setAEC(myAEC)  
+myExp.performAEC()  
+
+
+############################################################################################################
+# STEP 3: DETECT SPIKES
+############################################################################################################
+
 # Detect spks using weave
+spks_weave = []
+
 myExp.trainingset_traces[0].detectSpikes()
-spks_weave = myExp.trainingset_traces[0].spks.copy()
+spks_weave.append(myExp.trainingset_traces[0].spks.copy())
+
+for tr in myExp.testset_traces:
+    tr.detectSpikes()
+    spks_weave.append(tr.spks.copy())
 
 # Detect spks using python
+spks_python = []
+
 myExp.trainingset_traces[0].detectSpikes_python()
-spks_python = myExp.trainingset_traces[0].spks.copy()
+spks_python.append(myExp.trainingset_traces[0].spks.copy())
+
+for tr in myExp.testset_traces:
+    tr.detectSpikes_python()
+    spks_python.append(tr.spks.copy())
 
 # Detect spks using new numpy method
+spks_quickpy = []
+
 myExp.trainingset_traces[0].detectSpikes_quickpy()
-spks_quickpy = myExp.trainingset_traces[0].spks.copy()
+spks_quickpy.append(myExp.trainingset_traces[0].spks.copy())
+
+for tr in myExp.testset_traces:
+    tr.detectSpikes_quickpy()
+    spks_quickpy.append(tr.spks.copy())
+
+
+############################################################################################################
+# STEP 4: COMPARE SPIKETRAINS
+############################################################################################################
 
 # Print tests for identical output
+
+weave_vs_base = all(
+        [np.array_equal(arr_1, arr_2) for arr_1, arr_2 in zip(spks_weave, spks_python)])
 print('\nWeave and base python methods produce identical output'
       ' (positive control): {}'.format(
-              np.array_equal(spks_weave, spks_python)))
-print('Weave and numpy methods produce identical output: {}'.format(
-        np.array_equal(spks_weave, spks_quickpy)))
+              weave_vs_base))
 
+weave_vs_quickpy = all(
+        [np.array_equal(arr_1, arr_2) for arr_1, arr_2 in zip(spks_weave, spks_quickpy)])
+print('Weave and numpy methods produce identical output: {}'.format(
+        weave_vs_quickpy))
+
+
+############################################################################################################
+# STEP 4: COMPARE SPEED
+############################################################################################################
 
 # Print speed tests
 print('\nTiming weave method...')
