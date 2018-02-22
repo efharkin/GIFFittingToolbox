@@ -226,7 +226,9 @@ class gGIF(GIF) :
 
 
         # Compute adaptation current (sum of eta triggered at spike times in spks) 
-        eta_sum  = np.array(np.zeros(p_T + 1.1*p_eta_l + p_Tref_i), dtype="double")   
+        eta_sum  = np.array(
+                np.zeros(p_T + int(1.1*p_eta_l) + p_Tref_i),
+                dtype="double")   
         
         for s in spks_i :
             eta_sum[s  + p_Tref_i  : s  + p_Tref_i + p_eta_l] += p_eta
