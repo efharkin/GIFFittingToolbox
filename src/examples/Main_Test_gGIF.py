@@ -35,22 +35,43 @@ myExp = Experiment('Experiment 1', 0.1)
 PATH = '../../data/gif_test/'
 
 # Load AEC data
-myExp.setAECTrace(PATH + 'Cell3_Ger1Elec_ch2_1007.ibw', 1.0, PATH + 'Cell3_Ger1Elec_ch3_1007.ibw', 1.0, 10000.0, FILETYPE='Igor')
+myExp.setAECTrace(V = PATH + 'Cell3_Ger1Elec_ch2_1007.ibw', V_units = 1.0, 
+                  I = PATH + 'Cell3_Ger1Elec_ch3_1007.ibw', I_units = 1.0, 
+                  T = 10000.0, FILETYPE='Igor')
 
 # Load training set data
-myExp.addTrainingSetTrace(PATH + 'Cell3_Ger1Training_ch2_1008.ibw', 1.0, PATH + 'Cell3_Ger1Training_ch3_1008.ibw', 1.0, 120000.0, FILETYPE='Igor')
-myExp.trainingset_traces[0].setROI([[0,100000.0]])
+myExp.addTrainingSetTrace(V = PATH + 'Cell3_Ger1Training_ch2_1008.ibw', V_units = 1.0,
+                          I = PATH + 'Cell3_Ger1Training_ch3_1008.ibw', I_units = 1.0, 
+                          T = 120000.0, FILETYPE='Igor')
 
 # Load test set data
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1009.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1009.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1010.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1010.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1011.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1011.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1012.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1012.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1013.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1013.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1014.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1014.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1015.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1015.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1016.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1016.ibw', 1.0, 20000.0, FILETYPE='Igor')
-myExp.addTestSetTrace(PATH + 'Cell3_Ger1Test_ch2_1017.ibw', 1.0, PATH + 'Cell3_Ger1Test_ch3_1017.ibw', 1.0, 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1009.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1009.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1010.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1010.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1011.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1011.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1012.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1012.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1013.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1013.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1014.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1014.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1015.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1015.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1016.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1016.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
+myExp.addTestSetTrace(V = PATH + 'Cell3_Ger1Test_ch2_1017.ibw', V_units = 1.0, 
+                      I = PATH + 'Cell3_Ger1Test_ch3_1017.ibw', I_units = 1.0, 
+                      T = 20000.0, FILETYPE='Igor')
 
 
 ############################################################################################################
