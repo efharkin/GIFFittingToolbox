@@ -90,12 +90,12 @@ class Trace :
         Return indices of the trace which are in ROI
         """
         
-        ROI_region = np.zeros(int(self.T/self.dt))
+        ROI_region = np.zeros(int(self.T/self.dt), dtype = np.bool)
 
         for ROI_interval in self.ROI :
-            ROI_region[int(ROI_interval[0]/self.dt) : int(ROI_interval[1]/self.dt)] = 1.0
+            ROI_region[int(ROI_interval[0]/self.dt) : int(ROI_interval[1]/self.dt)] = True
         
-        ROI_ind = np.where(ROI_region == 1.0)[0]
+        ROI_ind = np.where(ROI_region)[0]
         
         # Make sure indices are ok
         ROI_ind = ROI_ind[ np.where(ROI_ind<int(self.T/self.dt))[0] ]
@@ -114,12 +114,12 @@ class Trace :
         
         L = len(self.V)
         
-        LR_flag = np.ones(L)    
+        LR_flag = np.ones(L, dtype = np.bool)    
         
         
         # Select region in ROI
         ROI_ind = self.getROI()
-        LR_flag[ROI_ind] = 0.0
+        LR_flag[ROI_ind] = False
 
         # Remove region around spikes
         DT_before_i = int(DT_before/self.dt)
@@ -131,10 +131,10 @@ class Trace :
             lb = max(0, s - DT_before_i)
             ub = min(L, s + DT_after_i)
             
-            LR_flag[ lb : ub] = 1
+            LR_flag[ lb : ub] = True
             
         
-        indices = np.where(LR_flag==0)[0]  
+        indices = np.where(~LR_flag)[0]  
 
         return indices
 
@@ -147,7 +147,7 @@ class Trace :
         """
         
         DT_initialcutoff_i = int(DT_initialcutoff/self.dt)
-        ROI_region = np.zeros(int(self.T/self.dt))
+        ROI_region = np.zeros(int(self.T/self.dt), dtype = np.bool)
 
         for ROI_interval in self.ROI :
             
@@ -155,9 +155,9 @@ class Trace :
             ub = int(ROI_interval[1]/self.dt)
             
             if lb < ub :
-                ROI_region[lb:ub] = 1.0
+                ROI_region[lb:ub] = True
         
-        ROI_ind = np.where(ROI_region == 1.0)[0]
+        ROI_ind = np.where(ROI_region)[0]
         
         # Make sure indices are ok
         ROI_ind = ROI_ind[ np.where(ROI_ind<int(self.T/self.dt))[0] ]
