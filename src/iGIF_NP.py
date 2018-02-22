@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy import weave
-from scipy.weave import converters
+import weave
+from weave import converters
 from numpy.linalg import inv
 
 from SpikingModel import *

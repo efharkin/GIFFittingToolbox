@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy import weave
+import weave
 from numpy.linalg import inv
 
 from ThresholdModel import *
