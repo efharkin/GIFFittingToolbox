@@ -1,5 +1,6 @@
 from warnings import warn
 
+import numpy as np
 import matplotlib.pyplot as plt
 import cPickle as pkl
 import quantities as pq
@@ -9,6 +10,7 @@ from SpikeTrainComparator import *
 from SpikingModel import *
 from Trace import *
 from AEC_Dummy import *
+import ReadIBW
 
 
 class Experiment :

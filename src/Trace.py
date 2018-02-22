@@ -4,10 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy import weave
-from neo import AxonIO
-
-import ReadIBW
-
 
 
 class Trace :
