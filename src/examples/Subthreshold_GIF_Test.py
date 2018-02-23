@@ -92,7 +92,7 @@ print('Success!\n')
 ############################################################################################################
 
 # Create a new object GIF 
-myGIF = GIF(0.1)
+myGIF = SubthreshGIF(0.1)
 
 # Define parameters
 myGIF.Tref = 4.0  
@@ -117,7 +117,7 @@ try:
 except:
     print 'Model fit test failed.\n'
     raise
-print 'Success!\n'
+print '\nSuccessful model fit!\n'
 
 # Plot the model parameters
 myGIF.printParameters()

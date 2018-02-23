@@ -5,7 +5,7 @@ import numpy as np
 import weave
 from numpy.linalg import inv
 
-from ThresholdModel import *
+from GIF import *
 from Filter_Rect_LogSpaced import *
 
 from Tools import reprint
@@ -14,7 +14,7 @@ from numpy import nan, NaN
 import math
 
 
-class GIF(ThresholdModel) :
+class SubthreshGIF(GIF) :
 
     """
     Generalized Integrate and Fire model defined in Pozzorini et al. PLOS Comp. Biol. 2015
@@ -79,13 +79,6 @@ class GIF(ThresholdModel) :
         
     
     
-    def setDt(self, dt):
-
-        """
-        Define the time step used for numerical simulations. The filters eta and gamma are interpolated accordingly.
-        """
-        
-        self.dt = dt
 
     
     ########################################################################################################
