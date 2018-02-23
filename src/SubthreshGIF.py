@@ -129,7 +129,7 @@ class SubthreshGIF(GIF) :
                 
                 """
  
-        vars = [ 'p_T','p_dt','p_gl','p_C','p_El','p_Vr','p_Tref','p_Vt_star','p_DV','p_lambda0','V','I','p_eta','p_eta_l','eta_sum','p_gamma','gamma_sum','p_gamma_l','spks' ]
+        vars = [ 'p_T','p_dt','p_gl','p_C','p_El','V','I' ]
         
         v = weave.inline(code, vars)
 
@@ -285,7 +285,7 @@ class SubthreshGIF(GIF) :
             if tr.useTrace :
 
                 # Simulate subthreshold dynamics 
-                (time, V_est, eta_sum_est) = self.simulate(tr.I, tr.V[0])
+                (time, V_est) = self.simulate(tr.I, tr.V[0])
                 
                 indices_tmp = tr.getROI()
                 
