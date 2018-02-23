@@ -120,18 +120,22 @@ class Trace :
         # Select region in ROI
         ROI_ind = self.getROI()
         LR_flag[ROI_ind] = False
-
-        # Remove region around spikes
-        DT_before_i = int(DT_before/self.dt)
-        DT_after_i  = int(DT_after/self.dt)
         
         
-        for s in self.spks :
+        # Remove spks-associated indices iff there are spks in the Trace
+        if len(self.spks) >= 1:
+        
+            # Remove region around spikes
+            DT_before_i = int(DT_before/self.dt)
+            DT_after_i  = int(DT_after/self.dt)
             
-            lb = max(0, s - DT_before_i)
-            ub = min(L, s + DT_after_i)
             
-            LR_flag[ lb : ub] = True
+            for s in self.spks :
+                
+                lb = max(0, s - DT_before_i)
+                ub = min(L, s + DT_after_i)
+                
+                LR_flag[ lb : ub] = True
             
         
         indices = np.where(~LR_flag)[0]  
@@ -189,9 +193,10 @@ class Trace :
         # Convert rising edges to spk inds
         spks = np.where(rising_edges)[0] + 1
         
-        # Remove points that reference the same spk
-        redundant_pts = np.where(np.diff(spks) <= ref_ind)[0] + 1
-        spks = np.delete(spks, redundant_pts)
+        # Remove points that reference the same spk, if any spks were detected
+        if len(spks) >= 1:
+            redundant_pts = np.where(np.diff(spks) <= ref_ind)[0] + 1
+            spks = np.delete(spks, redundant_pts)
         
         # Assign output
         self.spks = spks

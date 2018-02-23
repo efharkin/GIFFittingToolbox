@@ -65,7 +65,30 @@ myExp.plotTestSet()
 
 
 ############################################################################################################
-# STEP 3: FIT GIF MODEL TO DATA
+# STEP 3: TEST SPIKE DETECTION AND ROI SELECTION IN Trace
+############################################################################################################
+
+# Test spike detection
+print '\nTesting spike detection...'
+try:
+    myExp.trainingset_traces[0].detectSpikes()
+except:
+    print('\nSpike detection test failed.\n')
+    raise
+print 'Success!\n'
+
+# Test ROI selection
+print '\nTesting ROI selection...'
+try:
+    myExp.trainingset_traces[0].getROI_FarFromSpikes(5., 5.)
+except:
+    print('\ngetROI_FarFromSpikes test failed.\n')
+    raise
+print('Success!\n')
+
+
+############################################################################################################
+# STEP 4: FIT GIF MODEL TO DATA
 ############################################################################################################
 
 # Create a new object GIF 
@@ -99,7 +122,7 @@ myGIF.plotParameters()
 
 
 ############################################################################################################
-# STEP 3A (OPTIONAL): PLAY A BIT WITH THE FITTED MODEL
+# STEP 4A (OPTIONAL): PLAY A BIT WITH THE FITTED MODEL
 ############################################################################################################
 
 ## Reload the model
@@ -127,7 +150,7 @@ myGIF.plotParameters()
 
 
 ############################################################################################################
-# STEP 4: EVALUATE THE GIF MODEL PERFORMANCE (USING MD*)
+# STEP 5: EVALUATE THE GIF MODEL PERFORMANCE (USING MD*)
 ############################################################################################################
 
 # Use the myGIF model to predict the spiking data of the test data set in myExp
