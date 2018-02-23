@@ -181,54 +181,11 @@ class SubthreshGIF(GIF) :
     def fitVoltageReset(self, experiment, Tref, do_plot=False):
         
         """
-        Implement Step 1 of the fitting procedure introduced in Pozzorini et al. PLOS Comb. Biol. 2015
-        experiment: Experiment object on which the model is fitted.
-        Tref: ms, absolute refractory period. 
-        The voltage reset is estimated by computing the spike-triggered average of the voltage.
+        Subthreshold model does not spike.
         """
         
-        print "Estimate voltage reset (Tref = %0.1f ms)..." % (Tref)
+        raise RuntimeError('Subthreshold model does not spike.')
         
-        # Fix absolute refractory period
-        self.dt = experiment.dt
-        self.Tref = Tref
-        
-        all_spike_average = []
-        all_spike_nb = 0
-        for tr in experiment.trainingset_traces :
-            
-            if tr.useTrace :
-                if len(tr.spks) > 0 :
-                    (support, spike_average, spike_nb) = tr.computeAverageSpikeShape()
-                    all_spike_average.append(spike_average)
-                    all_spike_nb += spike_nb
-        
-        if all_spike_nb >= 1:
-            
-            # Perform operations on spks if any were found
-            
-            spike_average = np.mean(all_spike_average, axis=0)
-            
-            # Estimate voltage reset
-            Tref_ind = np.where(support >= self.Tref)[0][0]
-            self.Vr = spike_average[Tref_ind]
-        
-            # Save average spike shape
-            self.avg_spike_shape = spike_average
-            self.avg_spike_shape_support = support
-            
-            if do_plot :
-                plt.figure()
-                plt.plot(support, spike_average, 'black')
-                plt.plot([support[Tref_ind]], [self.Vr], '.', color='red')            
-                plt.show()
-                
-        else:
-            
-            # If no spks, leave self.avg_spike_shape & support unchanged
-            pass
-        
-        print "Done! Vr = %0.2f mV (computed on %d spikes)" % (self.Vr, all_spike_nb)
         
 
 
@@ -237,7 +194,7 @@ class SubthreshGIF(GIF) :
     ########################################################################################################
 
 
-    def fitSubthresholdDynamics(self, experiment, DT_beforeSpike=5.0):
+    def fitSubthresholdDynamics(self, experiment):
           
         """
         Implement Step 2 of the fitting procedure introduced in Pozzorini et al. PLOS Comb. Biol. 2015
@@ -268,7 +225,7 @@ class SubthreshGIF(GIF) :
                 reprint( "Compute X matrix for repetition %d" % (cnt) )          
                 
                 # Compute the the X matrix and Y=\dot_V_data vector used to perform the multilinear linear regression (see Eq. 17.18 in Pozzorini et al. PLOS Comp. Biol. 2015)
-                (X_tmp, Y_tmp) = self.fitSubthresholdDynamics_Build_Xmatrix_Yvector(tr, DT_beforeSpike=DT_beforeSpike)
+                (X_tmp, Y_tmp) = self.fitSubthresholdDynamics_Build_Xmatrix_Yvector(tr)
      
                 X.append(X_tmp)
                 Y.append(Y_tmp)
@@ -305,17 +262,6 @@ class SubthreshGIF(GIF) :
         self.C  = 1./b[1]
         self.gl = -b[0]*self.C
         self.El = b[2]*self.C/self.gl
-        
-        # Extract eta coefficients if they were obtained during the fit
-        if len(b) >= 4:
-            self.eta.setFilter_Coefficients(-b[3:]*self.C)
-        else:
-            # Set coefficients to zero otherwise
-            # (This happens if there were no spks in the training set.)
-            
-            eta_placeholders = np.zeros(
-                    self.eta.getNbOfBasisFunctions(), dtype = np.float64)
-            self.eta.setFilter_Coefficients(eta_placeholders)
     
     
         self.printParameters()   
@@ -339,9 +285,9 @@ class SubthreshGIF(GIF) :
             if tr.useTrace :
 
                 # Simulate subthreshold dynamics 
-                (time, V_est, eta_sum_est) = self.simulateDeterministic_forceSpikes(tr.I, tr.V[0], tr.getSpikeTimes())
+                (time, V_est, eta_sum_est) = self.simulate(tr.I, tr.V[0])
                 
-                indices_tmp = tr.getROI_FarFromSpikes(0.0, self.Tref)
+                indices_tmp = tr.getROI()
                 
                 SSE += sum((V_est[indices_tmp] - tr.V[indices_tmp])**2)
                 VAR += len(indices_tmp)*np.var(tr.V[indices_tmp])
@@ -351,7 +297,7 @@ class SubthreshGIF(GIF) :
         print "Percentage of variance explained (on V): %0.2f" % (var_explained_V*100.0)
                 
                     
-    def fitSubthresholdDynamics_Build_Xmatrix_Yvector(self, trace, DT_beforeSpike=5.0):
+    def fitSubthresholdDynamics_Build_Xmatrix_Yvector(self, trace):
            
         """
         Compute the X matrix and the Y vector (i.e. \dot_V_data) used to perfomr the linear regression 
@@ -365,7 +311,7 @@ class SubthreshGIF(GIF) :
         
         # Select region where to perform linear regression (specified in the ROI of individual taces)
         ####################################################################################################
-        selection = trace.getROI_FarFromSpikes(DT_beforeSpike, self.Tref)
+        selection = trace.getROI()
         selection_l = len(selection)
         
         
@@ -378,12 +324,6 @@ class SubthreshGIF(GIF) :
         X[:,1] = trace.I[selection]
         X[:,2] = np.ones(selection_l) 
         
-        # Compute eta (spk-triggered current) and concatenate onto X
-        # iff trace contains spks
-        if trace.getSpikeNb() >= 1:
-            X_eta = self.eta.convolution_Spiketrain_basisfunctions(trace.getSpikeTimes() + self.Tref, trace.T, trace.dt) 
-            X = np.concatenate( (X, X_eta[selection,:]), axis=1 )
-
 
         # Build Y vector (voltage derivative \dot_V_data)    
         ####################################################################################################
@@ -398,316 +338,58 @@ class SubthreshGIF(GIF) :
     ########################################################################################################        
  
          
-    def fitStaticThreshold(self, experiment):
+    def fitStaticThreshold(self, *args):
         
         """
-        Implement Step 3 of the fitting procedure introduced in Pozzorini et al. PLOS Comb. Biol. 2015
-        Instead of directly fitting a dynamic threshold, this function just fit a constant threshold.
-        The output of this fit can be used as a smart initial condition to fit the full GIF model (i.e.,
-        a model featuting a spike-triggered current gamma). See Pozzorini et al. PLOS Comp. Biol. 2015
-        experiment: Experiment object on which the model is fitted.
+        Subthreshold models do not spike.
         """
-
-        print "\nGIF MODEL - Fit static threshold...\n"
-
         
-        self.setDt(experiment.dt)
-    
-            
-        # Define initial conditions (based on the average firing rate in the training set)
-        ###############################################################################################
-       
-        nbSpikes = 0
-        duration = 0
-        
-        for tr in experiment.trainingset_traces :
-            
-            if tr.useTrace :
-                
-                nbSpikes += tr.getSpikeNb_inROI()
-                duration += tr.getTraceLength_inROI()
-                
-        mean_firingrate = 1000.0*nbSpikes/duration      
-        
-        self.lambda0 = 1.0
-        self.DV = 50.0
-        self.Vt_star = -np.log(mean_firingrate)*self.DV
-
-
-        # Perform maximum likelihood fit (Newton method)    
-        ###############################################################################################
-
-        beta0_staticThreshold = [1/self.DV, -self.Vt_star/self.DV] 
-        beta_opt = self.maximizeLikelihood(experiment, beta0_staticThreshold, self.buildXmatrix_staticThreshold) 
-            
-            
-        # Store result of constnat threshold fitting  
-        ###############################################################################################
-        
-        self.DV      = 1.0/beta_opt[0]
-        self.Vt_star = -beta_opt[1]*self.DV 
-        self.gamma.setFilter_toZero()
-        
-        self.printParameters()
+        raise RuntimeError('Subthreshold models do not spike.')
 
    
-    def fitThresholdDynamics(self, experiment):
+    def fitThresholdDynamics(self, *args):
                   
         """
-        Implement Step 3 of the fitting procedure introduced in Pozzorini et al. PLOS Comb. Biol. 2015
-        Fit firing threshold dynamics by solving Eq. 20 using Newton method.
+        Subthreshold models do not spike.
+        """
         
-        experiment: Experiment object on which the model is fitted.
-        """        
-        
-        print "\nGIF MODEL - Fit dynamic threshold...\n"
-        
-        
-        self.setDt(experiment.dt)
-  
-        
-        # Perform maximum likelihood fit (Newton method) 
-        ###############################################################################################
-   
-        # Define initial conditions
-        beta0_dynamicThreshold = np.concatenate( ( [1/self.DV], [-self.Vt_star/self.DV], self.gamma.getCoefficients()/self.DV))        
-        beta_opt = self.maximizeLikelihood(experiment, beta0_dynamicThreshold, self.buildXmatrix_dynamicThreshold)
-
-        
-        # Store result
-        ###############################################################################################
-        
-        self.DV      = 1.0/beta_opt[0]
-        self.Vt_star = -beta_opt[1]*self.DV 
-        self.gamma.setFilter_Coefficients(-beta_opt[2:]*self.DV)
-
-        self.printParameters()
+        raise RuntimeError('Subthreshold models do not spike.')
           
       
-    def maximizeLikelihood(self, experiment, beta0, buildXmatrix, maxIter=10**3, stopCond=10**-6) :
+    def maximizeLikelihood(self, *args) :
     
-        ###
-        ### THIS IMPLEMENTATION IS NOT SO COOL :(
-        ### IN NEW VERSION OF THE CODE I SHOULD IMPLEMENT A NEW CLASS THAT TAKES CARE OF MAXLIKELIHOOD ON lambda=exp(Xbeta) model
-        ###
-        
         """
-        Maximize likelihood. This function can be used to fit any model of the form lambda=exp(Xbeta).
-        This function is used to fit both:
-        - static threshold
-        - dynamic threshold
-        The difference between the two functions is in the size of beta0 and the returned beta, as well
-        as the function buildXmatrix.
+        Subthreshold models do not spike.
         """
         
-        # Precompute all the matrices used in the gradient ascent (see Eq. 20 in Pozzorini et al. 2015)
-        ################################################################################################
-        
-        # here X refer to the matrix made of y vectors defined in Eq. 21 (Pozzorini et al. 2015)
-        # since the fit can be perfomed on multiple traces, we need lists
-        all_X        = []           
-        
-        # similar to X but only contains temporal samples where experimental spikes have been observed 
-        # storing this matrix is useful to improve speed when computing the likelihood as well as its derivative
-        all_X_spikes = []
-        
-        # sum X_spikes over spikes. Precomputing this quantity improve speed when the gradient is evaluated
-        all_sum_X_spikes = []
-        
-        
-        # variables used to compute the loglikelihood of a Poisson process spiking at the experimental firing rate
-        T_tot = 0.0
-        N_spikes_tot = 0.0
-        
-        traces_nb = 0
-        
-        for tr in experiment.trainingset_traces:
-            
-            if tr.useTrace :              
-                
-                traces_nb += 1
-                
-                # Simulate subthreshold dynamics 
-                (time, V_est, eta_sum_est) = self.simulateDeterministic_forceSpikes(tr.I, tr.V[0], tr.getSpikeTimes())
-                             
-                # Precomputes matrices to compute gradient ascent on log-likelihood
-                # depeinding on the model being fitted (static vs dynamic threshodl) different buildXmatrix functions can be used
-                (X_tmp, X_spikes_tmp, sum_X_spikes_tmp, N_spikes, T) = buildXmatrix(tr, V_est) 
-                    
-                T_tot        += T
-                N_spikes_tot += N_spikes
-                    
-                all_X.append(X_tmp)
-                all_X_spikes.append(X_spikes_tmp)
-                all_sum_X_spikes.append(sum_X_spikes_tmp)
-        
-        # Compute log-likelihood of a poisson process (this quantity is used to normalize the model log-likelihood)
-        ################################################################################################
-        
-        logL_poisson = N_spikes_tot*(np.log(N_spikes_tot/T_tot)-1)
-
-
-        # Perform gradient ascent
-        ################################################################################################
-    
-        print "Maximize log-likelihood (bit/spks)..."
-                        
-        beta = beta0
-        old_L = 1
-
-        for i in range(maxIter) :
-            
-            learning_rate = 1.0
-            
-            # In the first iterations using a small learning rate makes things somehow more stable
-            if i<=10 :                      
-                learning_rate = 0.1
-            
-            
-            L=0; G=0; H=0;  
-               
-            for trace_i in np.arange(traces_nb):
-                
-                # compute log-likelihood, gradient and hessian on a specific trace (note that the fit is performed on multiple traces)
-                (L_tmp,G_tmp,H_tmp) = self.computeLikelihoodGradientHessian(beta, all_X[trace_i], all_X_spikes[trace_i], all_sum_X_spikes[trace_i])
-                
-                # note that since differentiation is linear: gradient of sum = sum of gradient ; hessian of sum = sum of hessian
-                L+=L_tmp; 
-                G+=G_tmp; 
-                H+=H_tmp;
-            
-            
-            # Update optimal parametes (ie, implement Newton step) by tacking into account multiple traces
-            
-            beta = beta - learning_rate*np.dot(inv(H),G)
-                
-            if (i>0 and abs((L-old_L)/old_L) < stopCond) :              # If converged
-                print "\nConverged after %d iterations!\n" % (i+1)
-                break
-            
-            old_L = L
-            
-            # Compute normalized likelihood (for print)
-            # The likelihood is normalized with respect to a poisson process and units are in bit/spks
-            L_norm = (L-logL_poisson)/np.log(2)/N_spikes_tot
-            reprint(L_norm)
-            
-            if math.isnan(L_norm):
-                print "Problem during gradient ascent. Optimizatino stopped."
-                break
-    
-        if (i==maxIter - 1) :                                           # If too many iterations
-            
-            print "\nNot converged after %d iterations.\n" % (maxIter)
-
-
-        return beta
+        raise RuntimeError('Subthreshold models do not spike.')
      
         
-    def computeLikelihoodGradientHessian(self, beta, X, X_spikes, sum_X_spikes) : 
+    def computeLikelihoodGradientHessian(self, *args) : 
         
         """
-        Compute the log-likelihood, its gradient and hessian for a model whose 
-        log-likelihood has the same form as the one defined in Eq. 20 (Pozzorini et al. PLOS Comp. Biol. 2015)
+        Subthreshold models do not spike.
         """
         
-        # IMPORTANT: in general we assume that the lambda_0 = 1 Hz
-        # The parameter lambda0 is redundant with Vt_star, so only one of those has to be fitted.
-        # We genearlly fix lambda_0 adn fit Vt_star
-              
-        dt = self.dt/1000.0     # put dt in units of seconds (to be consistent with lambda_0)
-        
-        X_spikesbeta    = np.dot(X_spikes,beta)
-        Xbeta           = np.dot(X,beta)
-        expXbeta        = np.exp(Xbeta)
-
-        # Compute loglikelihood defined in Eq. 20 Pozzorini et al. 2015
-        L = sum(X_spikesbeta) - self.lambda0*dt*sum(expXbeta)
-                                       
-        # Compute its gradient
-        G = sum_X_spikes - self.lambda0*dt*np.dot(np.transpose(X), expXbeta)
-        
-        # Compute its Hessian
-        H = -self.lambda0*dt*np.dot(np.transpose(X)*expXbeta, X)
-        
-        return (L,G,H)
+        raise RuntimeError('Subthreshold models do not spike.')
 
 
-    def buildXmatrix_staticThreshold(self, tr, V_est) :
+    def buildXmatrix_staticThreshold(self, *args) :
 
         """
-        Use this function to fit a model in which the firing threshold dynamics is defined as:
-        V_T(t) = Vt_star (i.e., no spike-triggered movement of the firing threshold).
-        This function computes the matrix X made of vectors y simlar to the ones defined in Eq. 21 (Pozzorini et al. 2015).
-        In contrast ot Eq. 21, the X matrix computed here does not include the columns related to the spike-triggered threshold movement.
-        """        
+        Subthreshold models do not spike.
+        """
         
-        # Get indices be removing absolute refractory periods (-self.dt is to not include the time of spike)       
-        selection = tr.getROI_FarFromSpikes(-self.dt, self.Tref )
-        T_l_selection  = len(selection)
-
-         
-        # Get spike indices in coordinates of selection   
-        spk_train = tr.getSpikeTrain()
-        spks_i_afterselection = np.where(spk_train[selection]==1)[0]
-
-
-        # Compute average firing rate used in the fit   
-        T_l = T_l_selection*tr.dt/1000.0                # Total duration of trace used for fit (in s)
-        N_spikes = len(spks_i_afterselection)           # Nb of spikes in the trace used for fit
-
-        
-        # Define X matrix
-        X       = np.zeros((T_l_selection, 2))
-        X[:,0]  = V_est[selection]
-        X[:,1]  = np.ones(T_l_selection)
-        
-        # Select time steps in which the neuron has emitted a spike
-        X_spikes = X[spks_i_afterselection,:]
-            
-        # Sum X_spike over spikes    
-        sum_X_spikes = np.sum( X_spikes, axis=0)
-        
-        return (X, X_spikes, sum_X_spikes, N_spikes, T_l)
+        raise RuntimeError('Subthreshold models do not spike.')
         
             
-    def buildXmatrix_dynamicThreshold(self, tr, V_est) :
+    def buildXmatrix_dynamicThreshold(self, *args) :
 
         """
-        Use this function to fit a model in which the firing threshold dynamics is defined as:
-        V_T(t) = Vt_star + sum_i gamma(t-\hat t_i) (i.e., model with spike-triggered movement of the threshold)
-        This function computes the matrix X made of vectors y defined as in Eq. 21 (Pozzorini et al. 2015).
+        Subthreshold models do not spike.
         """
-           
-        # Get indices be removing absolute refractory periods (-self.dt is to not include the time of spike)       
-        selection = tr.getROI_FarFromSpikes(-tr.dt, self.Tref)
-        T_l_selection  = len(selection)
-
-            
-        # Get spike indices in coordinates of selection   
-        spk_train = tr.getSpikeTrain()
-        spks_i_afterselection = np.where(spk_train[selection]==1)[0]
-
-
-        # Compute average firing rate used in the fit   
-        T_l = T_l_selection*tr.dt/1000.0                # Total duration of trace used for fit (in s)
-        N_spikes = len(spks_i_afterselection)           # Nb of spikes in the trace used for fit
         
-        
-        # Define X matrix
-        X       = np.zeros((T_l_selection, 2))
-        X[:,0]  = V_est[selection]
-        X[:,1]  = np.ones(T_l_selection)
-           
-        # Compute and fill the remaining columns associated with the spike-triggered current gamma              
-        X_gamma = self.gamma.convolution_Spiketrain_basisfunctions(tr.getSpikeTimes() + self.Tref, tr.T, tr.dt)
-        X = np.concatenate( (X, X_gamma[selection,:]), axis=1 )
-  
-        # Precompute other quantities to speedup fitting
-        X_spikes = X[spks_i_afterselection,:]
-        sum_X_spikes = np.sum( X_spikes, axis=0)
-                     
-        return (X, X_spikes, sum_X_spikes,  N_spikes, T_l)
+        raise RuntimeError('Subthreshold models do not spike.')
  
  
         
