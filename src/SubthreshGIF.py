@@ -404,7 +404,7 @@ class SubthreshGIF(GIF) :
         Generate figure with model filters.
         """
         
-        plt.figure(facecolor='white', figsize=(14,4))
+        plt.figure(facecolor='white', figsize=(5,4))
             
         # Plot kappa
         plt.subplot(1,1,1)
@@ -469,7 +469,7 @@ class SubthreshGIF(GIF) :
         colors = plt.cm.jet( np.linspace(0.7, 1.0, len(GIFs) ) )   
         
         # Membrane filter
-        plt.subplot(2,2,1)
+        plt.subplot(111)
             
         cnt = 0
         for GIF in GIFs :
@@ -485,68 +485,6 @@ class SubthreshGIF(GIF) :
         plt.xlabel('Time (ms)')
         plt.ylabel('Membrane filter (MOhm/ms)')  
 
-
-        # Spike triggered current
-        plt.subplot(2,2,2)
-            
-        cnt = 0
-        for GIF in GIFs :
-            
-            if labels == None :
-                label_tmp =""
-            else :
-                label_tmp = labels[cnt]
-            
-            (eta_support, eta) = GIF.eta.getInterpolatedFilter(0.1)         
-            plt.plot(eta_support, eta, color=colors[cnt], lw=2, label=label_tmp)
-            cnt += 1
-            
-        plt.plot([eta_support[0], eta_support[-1]], [0,0], ls=':', color='black', lw=2, zorder=-1)   
-        
-        if labels != None :
-            plt.legend()       
-            
-        
-        plt.xlim([eta_support[0], eta_support[-1]])
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Eta (nA)')        
-        
-
-        # Escape rate
-        plt.subplot(2,2,3)
-            
-        cnt = 0
-        for GIF in GIFs :
-            
-            V_support = np.linspace(GIF.Vt_star-5*GIF.DV,GIF.Vt_star+10*GIF.DV, 1000) 
-            escape_rate = GIF.lambda0*np.exp((V_support-GIF.Vt_star)/GIF.DV)                
-            plt.plot(V_support, escape_rate, color=colors[cnt], lw=2)
-            cnt += 1
-          
-        plt.ylim([0, 100])    
-        plt.plot([V_support[0], V_support[-1]], [0,0], ls=':', color='black', lw=2, zorder=-1)   
-    
-        plt.xlim([V_support[0], V_support[-1]])
-        plt.xlabel('Membrane potential (mV)')
-        plt.ylabel('Escape rate (Hz)')  
-
-
-        # Spike triggered threshold movememnt
-        plt.subplot(2,2,4)
-            
-        cnt = 0
-        for GIF in GIFs :
-            
-            (gamma_support, gamma) = GIF.gamma.getInterpolatedFilter(0.1)         
-            plt.plot(gamma_support, gamma, color=colors[cnt], lw=2)
-            cnt += 1
-            
-        plt.plot([gamma_support[0], gamma_support[-1]], [0,0], ls=':', color='black', lw=2, zorder=-1)   
-      
-        plt.xlim([gamma_support[0]+0.1, gamma_support[-1]])
-        plt.ylim([-100,100])
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Gamma (mV)')   
 
         plt.subplots_adjust(left=0.08, bottom=0.10, right=0.95, top=0.93, wspace=0.25, hspace=0.25)
         
@@ -597,61 +535,6 @@ class SubthreshGIF(GIF) :
         plt.xlabel('Time (ms)')
         plt.ylabel('Membrane filter (MOhm/ms)')  
 
-       
-        # SPIKE-TRIGGERED CURRENT
-        #######################################################################################################
-    
-        plt.subplot(2,4,2)
-                    
-        K_all = []
-        
-        for GIF in GIFs :
-                
-            (K_support, K) = GIF.eta.getInterpolatedFilter(0.1)      
-   
-            plt.plot(K_support, K, color='0.3', lw=1, zorder=5)
-            
-            K_all.append(K)
-
-        K_mean = np.mean(K_all, axis=0)
-        K_std  = np.std(K_all, axis=0)
-        
-        plt.fill_between(K_support, K_mean+K_std,y2=K_mean-K_std, color='gray', zorder=0)
-        plt.plot(K_support, np.mean(K_all, axis=0), color='red', lw=2, zorder=10)  
-        plt.plot([K_support[0], K_support[-1]], [0,0], ls=':', color='black', lw=2, zorder=-1)   
-                
-        Tools.removeAxis(plt.gca(), ['top', 'right'])
-        plt.xlim([K_support[0], K_support[-1]/10.0])
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Spike-triggered current (nA)')  
- 
- 
-        # SPIKE-TRIGGERED MOVEMENT OF THE FIRING THRESHOLD
-        #######################################################################################################
-    
-        plt.subplot(2,4,3)
-                    
-        K_all = []
-        
-        for GIF in GIFs :
-                
-            (K_support, K) = GIF.gamma.getInterpolatedFilter(0.1)      
-   
-            plt.plot(K_support, K, color='0.3', lw=1, zorder=5)
-            
-            K_all.append(K)
-
-        K_mean = np.mean(K_all, axis=0)
-        K_std  = np.std(K_all, axis=0)
-        
-        plt.fill_between(K_support, K_mean+K_std,y2=K_mean-K_std, color='gray', zorder=0)
-        plt.plot(K_support, np.mean(K_all, axis=0), color='red', lw=2, zorder=10)   
-        plt.plot([K_support[0], K_support[-1]], [0,0], ls=':', color='black', lw=2, zorder=-1)   
-                
-        plt.xlim([K_support[0], K_support[-1]])
-        Tools.removeAxis(plt.gca(), ['top', 'right'])
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Spike-triggered threshold (mV)')  
  
       
         # R
@@ -704,54 +587,4 @@ class SubthreshGIF(GIF) :
         Tools.removeAxis(plt.gca(), ['top', 'left', 'right'])
         plt.yticks([])     
        
-          
-        # V reset
-        #######################################################################################################
-    
-        plt.subplot(4,6,18+2)
- 
-        p_all = []
-        for GIF in GIFs :
-                
-            p = GIF.Vr
-            p_all.append(p)
         
-        print "Mean Vr (mV): %0.1f" % (np.mean(p_all))  
-        
-        plt.hist(p_all, histtype='bar', color='red', ec='white', lw=2)
-        plt.xlabel('Vr (mV)')
-        Tools.removeAxis(plt.gca(), ['top', 'left', 'right'])
-        plt.yticks([])     
-        
-        
-        # Vt*
-        #######################################################################################################
-    
-        plt.subplot(4,6,12+3)
- 
-        p_all = []
-        for GIF in GIFs :
-                
-            p = GIF.Vt_star
-            p_all.append(p)
-            
-        plt.hist(p_all, histtype='bar', color='red', ec='white', lw=2)
-        plt.xlabel('Vt_star (mV)')
-        Tools.removeAxis(plt.gca(), ['top', 'left', 'right'])
-        plt.yticks([])    
-        
-        # Vt*
-        #######################################################################################################
-    
-        plt.subplot(4,6,18+3)
- 
-        p_all = []
-        for GIF in GIFs :
-                
-            p = GIF.DV
-            p_all.append(p)
-            
-        plt.hist(p_all, histtype='bar', color='red', ec='white', lw=2)
-        plt.xlabel('DV (mV)')
-        Tools.removeAxis(plt.gca(), ['top', 'left', 'right'])
-        plt.yticks([])    
