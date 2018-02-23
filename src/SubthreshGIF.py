@@ -44,38 +44,6 @@ class SubthreshGIF(GIF) :
         self.C       = 20.0*self.gl     # nF, capacitance
         self.El      = -65.0            # mV, reversal potential
         
-        self.Vr      = -50.0            # mV, voltage reset
-        self.Tref    = 4.0              # ms, absolute refractory period
-        
-        self.Vt_star = -48.0            # mV, steady state voltage threshold VT*
-        self.DV      = 0.5              # mV, threshold sharpness
-        self.lambda0 = 1.0              # by default this parameter is always set to 1.0 Hz
-        
-        
-        self.eta     = Filter_Rect_LogSpaced()    # nA, spike-triggered current (must be instance of class Filter)
-        self.gamma   = Filter_Rect_LogSpaced()    # mV, spike-triggered movement of the firing threshold (must be instance of class Filter)
-        
-        
-        # Initialize the spike-triggered current eta with an exponential function        
-        
-        def expfunction_eta(x):
-            return 0.2*np.exp(-x/100.0)
-        
-        self.eta.setFilter_Function(expfunction_eta)
-
-
-        # Initialize the spike-triggered current gamma with an exponential function        
-        
-        def expfunction_gamma(x):
-            return 10.0*np.exp(-x/100.0)
-        
-        self.gamma.setFilter_Function(expfunction_gamma)        
-        
-              
-        # Variables related to fitting procedure
-        
-        self.avg_spike_shape = 0
-        self.avg_spike_shape_support = 0
         
     
     
@@ -89,15 +57,10 @@ class SubthreshGIF(GIF) :
     def simulateSpikingResponse(self, I, dt):
         
         """
-        Simulate the spiking response of the GIF model to an input current I (nA) with time step dt.
-        Return a list of spike times (in ms).
-        The initial conditions for the simulation is V(0)=El.
+        Subthreshold model does not spike.
         """
-        self.setDt(dt)
-    
-        (time, V, eta_sum, V_T, spks_times) = self.simulate(I, self.El)
         
-        return spks_times
+        raise RuntimeError('Subthreshold model does not spike.')
 
 
     ########################################################################################################
@@ -126,9 +89,6 @@ class SubthreshGIF(GIF) :
         The function returns:
         - time     : ms, support for V, eta_sum, V_T, spks
         - V        : mV, membrane potential
-        - eta_sum  : nA, adaptation current
-        - V_T      : mV, firing threshold
-        - spks     : ms, list of spike times 
         """
  
         # Input parameters
@@ -139,27 +99,10 @@ class SubthreshGIF(GIF) :
         p_gl        = self.gl
         p_C         = self.C 
         p_El        = self.El
-        p_Vr        = self.Vr
-        p_Tref      = self.Tref
-        p_Vt_star   = self.Vt_star
-        p_DV        = self.DV
-        p_lambda0   = self.lambda0
-        
-        # Model kernels   
-        (p_eta_support, p_eta) = self.eta.getInterpolatedFilter(self.dt)   
-        p_eta       = p_eta.astype('double')
-        p_eta_l     = len(p_eta)
-
-        (p_gamma_support, p_gamma) = self.gamma.getInterpolatedFilter(self.dt)   
-        p_gamma     = p_gamma.astype('double')
-        p_gamma_l   = len(p_gamma)
       
         # Define arrays
         V = np.array(np.zeros(p_T), dtype="double")
         I = np.array(I, dtype="double")
-        spks = np.array(np.zeros(p_T), dtype="double")                      
-        eta_sum = np.array(np.zeros(p_T + 2*p_eta_l), dtype="double")
-        gamma_sum = np.array(np.zeros(p_T + 2*p_gamma_l), dtype="double")            
  
         # Set initial condition
         V[0] = V0
@@ -173,55 +116,14 @@ class SubthreshGIF(GIF) :
                 float gl         = float(p_gl);
                 float C          = float(p_C);
                 float El         = float(p_El);
-                float Vr         = float(p_Vr);
-                int   Tref_ind   = int(float(p_Tref)/dt);
-                float Vt_star    = float(p_Vt_star);
-                float DeltaV     = float(p_DV);
-                float lambda0    = float(p_lambda0);
-           
-                int eta_l        = int(p_eta_l);
-                int gamma_l      = int(p_gamma_l);
-                
-                                                  
-                float rand_max  = float(RAND_MAX); 
-                float p_dontspike = 0.0 ;
-                float lambda = 0.0 ;            
-                float r = 0.0;
                 
                                                 
                 for (int t=0; t<T_ind-1; t++) {
     
     
                     // INTEGRATE VOLTAGE
-                    V[t+1] = V[t] + dt/C*( -gl*(V[t] - El) + I[t] - eta_sum[t] );
+                    V[t+1] = V[t] + dt/C*( -gl*(V[t] - El) + I[t] );
                
-               
-                    // COMPUTE PROBABILITY OF EMITTING ACTION POTENTIAL
-                    lambda = lambda0*exp( (V[t+1]-Vt_star-gamma_sum[t])/DeltaV );
-                    p_dontspike = exp(-lambda*(dt/1000.0));                                  // since lambda0 is in Hz, dt must also be in Hz (this is why dt/1000.0)
-                          
-                          
-                    // PRODUCE SPIKE STOCHASTICALLY
-                    r = rand()/rand_max;
-                    if (r > p_dontspike) {
-                                        
-                        if (t+1 < T_ind-1)                
-                            spks[t+1] = 1.0; 
-                        
-                        t = t + Tref_ind;    
-                        
-                        if (t+1 < T_ind-1) 
-                            V[t+1] = Vr;
-                        
-                        
-                        // UPDATE ADAPTATION PROCESSES     
-                        for(int j=0; j<eta_l; j++) 
-                            eta_sum[t+1+j] += p_eta[j]; 
-                        
-                        for(int j=0; j<gamma_l; j++) 
-                            gamma_sum[t+1+j] += p_gamma[j] ;  
-                        
-                    }
                
                 }
                 
@@ -233,115 +135,17 @@ class SubthreshGIF(GIF) :
 
         time = np.arange(p_T)*self.dt
         
-        eta_sum   = eta_sum[:p_T]     
-        V_T = gamma_sum[:p_T] + p_Vt_star
-     
-        spks = (np.where(spks==1)[0])*self.dt
-    
-        return (time, V, eta_sum, V_T, spks)
+        return (time, V)
 
         
-    def simulateDeterministic_forceSpikes(self, I, V0, spks):
+    def simulateDeterministic_forceSpikes(self, *args):
         
         """
-        Simulate the subthresohld response of the GIF model to an input current I (nA) with time step dt.
-        Adaptation currents are forces to accur at times specified in the list spks (in ms) given as an argument
-        to the function.
-        V0 indicate the initial condition V(t=0)=V0.
-        
-        The function returns:
-        
-        - time     : ms, support for V, eta_sum, V_T, spks
-        - V        : mV, membrane potential
-        - eta_sum  : nA, adaptation current
+        Subthreshold model does not spike.
         """
  
-        # Input parameters
-        p_T          = len(I)
-        p_dt         = self.dt
-          
-          
-        # Model parameters
-        p_gl        = self.gl
-        p_C         = self.C 
-        p_El        = self.El
-        p_Vr        = self.Vr
-        p_Tref      = self.Tref
-        p_Tref_i    = int(self.Tref/self.dt)
-    
-    
-        # Model kernel      
-        (p_eta_support, p_eta) = self.eta.getInterpolatedFilter(self.dt)   
-        p_eta       = p_eta.astype('double')
-        p_eta_l     = len(p_eta)
-
-
-        # Define arrays
-        V        = np.array(np.zeros(p_T), dtype="double")
-        I        = np.array(I, dtype="double")
-        spks     = np.array(spks, dtype="double")                      
-        spks_i   = Tools.timeToIndex(spks, self.dt)
-
-
-        # Compute adaptation current (sum of eta triggered at spike times in spks) 
-        eta_sum  = np.array(
-                np.zeros(p_T + int(1.1*p_eta_l) + p_Tref_i), 
-                dtype="double")   
+        raise RuntimeError('Subthreshold model does not spike.')
         
-        for s in spks_i :
-            eta_sum[s + 1 + p_Tref_i  : s + 1 + p_Tref_i + p_eta_l] += p_eta
-        
-        eta_sum  = eta_sum[:p_T]  
-   
-   
-        # Set initial condition
-        V[0] = V0
-        
-    
-        code = """ 
-                #include <math.h>
-                
-                int   T_ind      = int(p_T);                
-                float dt         = float(p_dt); 
-                
-                float gl         = float(p_gl);
-                float C          = float(p_C);
-                float El         = float(p_El);
-                float Vr         = float(p_Vr);
-                int   Tref_ind   = int(float(p_Tref)/dt);
-
-
-                int next_spike = spks_i[0] + Tref_ind;
-                int spks_cnt = 0;
- 
-                                                                       
-                for (int t=0; t<T_ind-1; t++) {
-    
-    
-                    // INTEGRATE VOLTAGE
-                    V[t+1] = V[t] + dt/C*( -gl*(V[t] - El) + I[t] - eta_sum[t] );
-               
-               
-                    if ( t == next_spike ) {
-                        spks_cnt = spks_cnt + 1;
-                        next_spike = spks_i[spks_cnt] + Tref_ind;
-                        V[t-1] = 0 ;                  
-                        V[t] = Vr ;
-                        t=t-1;           
-                    }
-               
-                }
-        
-                """
- 
-        vars = [ 'p_T','p_dt','p_gl','p_C','p_El','p_Vr','p_Tref','V','I','eta_sum','spks_i' ]
-        
-        v = weave.inline(code, vars)
-
-        time = np.arange(p_T)*self.dt
-        eta_sum = eta_sum[:p_T]     
-
-        return (time, V, eta_sum)
 
            
     ########################################################################################################
