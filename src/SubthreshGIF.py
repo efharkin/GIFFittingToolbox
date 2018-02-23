@@ -169,7 +169,7 @@ class SubthreshGIF(GIF) :
         print "################################\n"
         
         
-        self.fitSubthresholdDynamics(experiment, DT_beforeSpike=DT_beforeSpike)
+        self.fitSubthresholdDynamics(experiment)
 
 
 
