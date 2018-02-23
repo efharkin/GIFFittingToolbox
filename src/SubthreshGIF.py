@@ -419,7 +419,7 @@ class SubthreshGIF(GIF) :
         plt.xlabel("Time (ms)")
         plt.ylabel("Membrane filter (MOhm/ms)")        
         
-        plt.subplots_adjust(left=0.05, bottom=0.15, right=0.95, top=0.92, wspace=0.35, hspace=0.25)
+        plt.tight_layout()
 
         plt.show()
       
