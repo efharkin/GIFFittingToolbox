@@ -3,7 +3,7 @@ sys.path.append('../')
 
 from Experiment import *
 from AEC_Badel import *
-from GIF import *
+from SubthreshGIF import *
 from Filter_Rect_LogSpaced import *
 from Filter_Rect_LinSpaced import *
 
@@ -73,7 +73,7 @@ print '\nTesting spike detection...'
 try:
     myExp.trainingset_traces[0].detectSpikes()
 except:
-    print('\nSpike detection test failed.\n')
+    print('Spike detection test failed.\n')
     raise
 print 'Success!\n'
 
@@ -82,7 +82,7 @@ print '\nTesting ROI selection...'
 try:
     myExp.trainingset_traces[0].getROI_FarFromSpikes(5., 5.)
 except:
-    print('\ngetROI_FarFromSpikes test failed.\n')
+    print('getROI_FarFromSpikes test failed.\n')
     raise
 print('Success!\n')
 
@@ -105,13 +105,19 @@ myGIF.gamma = Filter_Rect_LogSpaced()
 myGIF.gamma.setMetaParameters(length=500.0, binsize_lb=5.0, binsize_ub=1000.0, slope=5.0)
 
 # Define the ROI of the training set to be used for the fit (in this example we will use only the first 100 s)
-myExp.trainingset_traces[0].setROI([[0,100000.0]])
+myExp.trainingset_traces[0].setROI([[2000,58000]])
 
 # To visualize the training set and the ROI call again
 myExp.plotTrainingSet()
 
 # Perform the fit
-myGIF.fit(myExp, DT_beforeSpike=5.0)
+print '\nTesting model fitting...'
+try:
+    myGIF.fit(myExp, DT_beforeSpike=5.0)
+except:
+    print 'Model fit test failed.\n'
+    raise
+print 'Success!\n'
 
 # Plot the model parameters
 myGIF.printParameters()
@@ -146,21 +152,3 @@ myGIF.plotParameters()
 #plt.xlabel('Time (ms)')
 #plt.legend()
 #plt.show()
-
-
-
-############################################################################################################
-# STEP 5: EVALUATE THE GIF MODEL PERFORMANCE (USING MD*)
-############################################################################################################
-
-# Use the myGIF model to predict the spiking data of the test data set in myExp
-myPrediction = myExp.predictSpikes(myGIF, nb_rep=500)
-
-# Compute Md* with a temporal precision of +/- 4ms
-Md = myPrediction.computeMD_Kistler(4.0, 0.1)    
-
-# Plot data vs model prediction
-myPrediction.plotRaster(delta=1000.0) 
-
-
-

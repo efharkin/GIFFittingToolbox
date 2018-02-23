@@ -371,13 +371,8 @@ class GIF(ThresholdModel) :
         print "# Fit GIF"
         print "################################\n"
         
-        self.fitVoltageReset(experiment, self.Tref, do_plot=False)
         
         self.fitSubthresholdDynamics(experiment, DT_beforeSpike=DT_beforeSpike)
-        
-        self.fitStaticThreshold(experiment)
-
-        self.fitThresholdDynamics(experiment)
 
 
 
@@ -410,22 +405,31 @@ class GIF(ThresholdModel) :
                     (support, spike_average, spike_nb) = tr.computeAverageSpikeShape()
                     all_spike_average.append(spike_average)
                     all_spike_nb += spike_nb
-
-        spike_average = np.mean(all_spike_average, axis=0)
         
-        # Estimate voltage reset
-        Tref_ind = np.where(support >= self.Tref)[0][0]
-        self.Vr = spike_average[Tref_ind]
-
-        # Save average spike shape
-        self.avg_spike_shape = spike_average
-        self.avg_spike_shape_support = support
+        if all_spike_nb >= 1:
+            
+            # Perform operations on spks if any were found
+            
+            spike_average = np.mean(all_spike_average, axis=0)
+            
+            # Estimate voltage reset
+            Tref_ind = np.where(support >= self.Tref)[0][0]
+            self.Vr = spike_average[Tref_ind]
         
-        if do_plot :
-            plt.figure()
-            plt.plot(support, spike_average, 'black')
-            plt.plot([support[Tref_ind]], [self.Vr], '.', color='red')            
-            plt.show()
+            # Save average spike shape
+            self.avg_spike_shape = spike_average
+            self.avg_spike_shape_support = support
+            
+            if do_plot :
+                plt.figure()
+                plt.plot(support, spike_average, 'black')
+                plt.plot([support[Tref_ind]], [self.Vr], '.', color='red')            
+                plt.show()
+                
+        else:
+            
+            # If no spks, leave self.avg_spike_shape & support unchanged
+            pass
         
         print "Done! Vr = %0.2f mV (computed on %d spikes)" % (self.Vr, all_spike_nb)
         
@@ -504,7 +508,17 @@ class GIF(ThresholdModel) :
         self.C  = 1./b[1]
         self.gl = -b[0]*self.C
         self.El = b[2]*self.C/self.gl
-        self.eta.setFilter_Coefficients(-b[3:]*self.C)
+        
+        # Extract eta coefficients if they were obtained during the fit
+        if len(b) >= 4:
+            self.eta.setFilter_Coefficients(-b[3:]*self.C)
+        else:
+            # Set coefficients to zero otherwise
+            # (This happens if there were no spks in the training set.)
+            
+            eta_placeholders = np.zeros(
+                    self.eta.getNbOfBasisFunctions(), dtype = np.float64)
+            self.eta.setFilter_Coefficients(eta_placeholders)
     
     
         self.printParameters()   
@@ -567,10 +581,11 @@ class GIF(ThresholdModel) :
         X[:,1] = trace.I[selection]
         X[:,2] = np.ones(selection_l) 
         
-       
-        # Compute and fill the remaining columns associated with the spike-triggered current eta               
-        X_eta = self.eta.convolution_Spiketrain_basisfunctions(trace.getSpikeTimes() + self.Tref, trace.T, trace.dt) 
-        X = np.concatenate( (X, X_eta[selection,:]), axis=1 )
+        # Compute eta (spk-triggered current) and concatenate onto X
+        # iff trace contains spks
+        if trace.getSpikeNb() >= 1:
+            X_eta = self.eta.convolution_Spiketrain_basisfunctions(trace.getSpikeTimes() + self.Tref, trace.T, trace.dt) 
+            X = np.concatenate( (X, X_eta[selection,:]), axis=1 )
 
 
         # Build Y vector (voltage derivative \dot_V_data)    
