@@ -407,7 +407,7 @@ class SubthreshGIF(GIF) :
         plt.figure(facecolor='white', figsize=(14,4))
             
         # Plot kappa
-        plt.subplot(1,3,1)
+        plt.subplot(1,1,1)
         
         K_support = np.linspace(0,150.0, 300)             
         K = 1./self.C*np.exp(-K_support/(self.C/self.gl)) 
@@ -419,30 +419,6 @@ class SubthreshGIF(GIF) :
         plt.xlabel("Time (ms)")
         plt.ylabel("Membrane filter (MOhm/ms)")        
         
-        # Plot eta
-        plt.subplot(1,3,2)
-        
-        (eta_support, eta) = self.eta.getInterpolatedFilter(self.dt) 
-        
-        plt.plot(eta_support, eta, color='red', lw=2)
-        plt.plot([eta_support[0], eta_support[-1]], [0,0], ls=':', color='black', lw=2)
-            
-        plt.xlim([eta_support[0], eta_support[-1]])    
-        plt.xlabel("Time (ms)")
-        plt.ylabel("Eta (nA)")
-        
-
-        # Plot gamma
-        plt.subplot(1,3,3)
-        
-        (gamma_support, gamma) = self.gamma.getInterpolatedFilter(self.dt) 
-        
-        plt.plot(gamma_support, gamma, color='red', lw=2)
-        plt.plot([gamma_support[0], gamma_support[-1]], [0,0], ls=':', color='black', lw=2)
-            
-        plt.xlim([gamma_support[0], gamma_support[-1]])    
-        plt.xlabel("Time (ms)")
-        plt.ylabel("Gamma (mV)")
         plt.subplots_adjust(left=0.05, bottom=0.15, right=0.95, top=0.92, wspace=0.35, hspace=0.25)
 
         plt.show()
@@ -461,11 +437,7 @@ class SubthreshGIF(GIF) :
         print "R (MOhm):\t%0.3f"    % (1.0/self.gl)
         print "C (nF):\t\t%0.3f"    % (self.C)
         print "gl (nS):\t%0.6f"     % (self.gl)
-        print "El (mV):\t%0.3f"     % (self.El)
-        print "Tref (ms):\t%0.3f"   % (self.Tref)
-        print "Vr (mV):\t%0.3f"     % (self.Vr)     
-        print "Vt* (mV):\t%0.3f"    % (self.Vt_star)    
-        print "DV (mV):\t%0.3f"     % (self.DV)          
+        print "El (mV):\t%0.3f"     % (self.El)         
         print "-------------------------\n"
                   
 
