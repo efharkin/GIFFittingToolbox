@@ -128,6 +128,20 @@ myGIF.plotParameters()
 
 
 ############################################################################################################
+# STEP 5: EXTRACT POWER SPECTRUM DENSITY AND COMPARE BETWEEN MODEL AND DATA
+############################################################################################################
+
+# Test PSD extraction from data Trace
+print '\nTesting PSD extraction...'
+try:
+    myExp.trainingset_traces[0].extractPowerSpectrumDensity(True)
+except:
+    print 'PSD extraction test failed.\n'
+    raise
+print '\nSuccessful PSD extraction!\n'
+
+
+############################################################################################################
 # STEP 4A (OPTIONAL): PLAY A BIT WITH THE FITTED MODEL
 ############################################################################################################
 

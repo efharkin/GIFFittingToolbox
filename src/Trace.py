@@ -2,6 +2,7 @@ from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import signal
 
 import weave
 
@@ -366,8 +367,39 @@ class Trace :
         
         return sum(spike_train[ROI_ind])
         
+    
+    #################################################################################################
+    # POWER SPECTRUM ANALYSIS
+    #################################################################################################
+    
+    def extractPowerSpectrumDensity(self, do_plot = False) :
         
+        """
+        Estimate the power spectrum density of the recorded voltage
+        
+        Returns tuple of vectors: frequency (Hz) and corresponding power spectrum density.
+        """
+        
+        f, PSD = signal.welch(self.V, 1. / self.dt, window = 'hanning', 
+                       nperseg = 2**(np.round(np.log2(len(self.V)))))
 
+        if do_plot:
+            
+            plt.figure(figsize = (10, 4))
+            
+            ax = plt.subplot(111)
+            ax.set_yscale('log')
+            
+            ax.plot(f, PSD * 1000., 'b-', linewidth = 0.5)
+            
+            ax.set_xlabel('Frequency (Hz)')
+            ax.set_ylabel('PSD')
+            
+            plt.tight_layout()
+            plt.show()
+            
+        return f, PSD
+    
 
     #################################################################################################
     # GET STATISTICS, COMPUTED IN ROI
