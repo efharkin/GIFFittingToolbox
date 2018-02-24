@@ -140,14 +140,11 @@ except:
     raise
 print '\nSuccessful PSD extraction!\n'
 
-
+# Compare PSD of data and GIF model
 experimental_PSD = myExp.trainingset_traces[0].extractPowerSpectrumDensity()
-
-t, V_sim = myGIF.simulate(myExp.trainingset_traces[0].I,
-                          myExp.trainingset_traces[0].V[0])
-GIF_PSD = Trace(V_sim, 
-                myExp.trainingset_traces[0].I, 
-                60000, 0.1).extractPowerSpectrumDensity()
+GIF_PSD = myGIF.extractPowerSpectrumDensity(myExp.trainingset_traces[0].I,
+                                            myExp.trainingset_traces[0].V[0],
+                                            myExp.trainingset_traces[0].dt)
 
 plt.figure(figsize = (10, 4))
 
@@ -165,6 +162,7 @@ ax.legend()
 
 plt.tight_layout()
 plt.show()
+
 
 ############################################################################################################
 # STEP 4A (OPTIONAL): PLAY A BIT WITH THE FITTED MODEL

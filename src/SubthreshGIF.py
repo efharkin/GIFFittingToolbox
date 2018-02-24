@@ -7,6 +7,7 @@ from numpy.linalg import inv
 
 from GIF import *
 from Filter_Rect_LogSpaced import *
+from Trace import *
 
 from Tools import reprint
 from numpy import nan, NaN
@@ -392,7 +393,30 @@ class SubthreshGIF(GIF) :
         raise RuntimeError('Subthreshold models do not spike.')
  
  
+    
+    ########################################################################################################
+    # EXTRACT POWER SPECTRUM DENSITY
+    ########################################################################################################     
         
+    def extractPowerSpectrumDensity(self, I, V0, dt, do_plot = False) :
+        
+        # Check that timestep of current and GIF are not different
+        if dt != self.dt:
+            raise ValueError('Timestep of I ({}ms) and GIF ({}ms) must be '
+                             'the same or power spectrum may not make '
+                             'sense!'.format(dt, self.dt))
+        
+        t, V_sim = self.simulate(I, V0)
+        
+        GIF_PSD = Trace(V_sim, 
+                        I, 
+                        len(I) * self.dt,
+                        self.dt).extractPowerSpectrumDensity(do_plot)
+        
+        return GIF_PSD
+    
+    
+    
     ########################################################################################################
     # PLOT AND PRINT FUNCTIONS
     ########################################################################################################     
