@@ -40,10 +40,13 @@ class SubthreshGIF(GIF) :
         self.dt = dt                    # dt used in simulations (eta and gamma are interpolated according to this value)
   
         # Define model parameters
-        
         self.gl      = 1.0/100.0        # nS, leak conductance
         self.C       = 20.0*self.gl     # nF, capacitance
         self.El      = -65.0            # mV, reversal potential
+        
+        # Define attributes to store goodness-of-fit
+        self.var_explained_dV = 0
+        self.var_explained_V = 0
         
         
     
@@ -272,6 +275,8 @@ class SubthreshGIF(GIF) :
         ####################################################################################################
 
         var_explained_dV = 1.0 - np.mean((Y - np.dot(X,b))**2)/np.var(Y)
+        
+        self.var_explained_dV = var_explained_dV
         print "Percentage of variance explained (on dV/dt): %0.2f" % (var_explained_dV*100.0)
 
         
@@ -295,6 +300,7 @@ class SubthreshGIF(GIF) :
                 
         var_explained_V = 1.0 - SSE / VAR
         
+        self.var_explained_V = var_explained_V
         print "Percentage of variance explained (on V): %0.2f" % (var_explained_V*100.0)
                 
                     
