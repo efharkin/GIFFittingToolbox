@@ -97,13 +97,6 @@ myGIF = SubthreshGIF(0.1)
 # Define parameters
 myGIF.Tref = 4.0  
 
-myGIF.eta = Filter_Rect_LogSpaced()
-myGIF.eta.setMetaParameters(length=500.0, binsize_lb=2.0, binsize_ub=1000.0, slope=4.5)
-
-
-myGIF.gamma = Filter_Rect_LogSpaced()
-myGIF.gamma.setMetaParameters(length=500.0, binsize_lb=5.0, binsize_ub=1000.0, slope=5.0)
-
 # Define the ROI of the training set to be used for the fit (in this example we will use only the first 100 s)
 myExp.trainingset_traces[0].setROI([[2000,58000]])
 
@@ -113,7 +106,7 @@ myExp.plotTrainingSet()
 # Perform the fit
 print '\nTesting model fitting...'
 try:
-    myGIF.fit(myExp, DT_beforeSpike=5.0)
+    myGIF.fit(myExp)
 except:
     print 'Model fit test failed.\n'
     raise
