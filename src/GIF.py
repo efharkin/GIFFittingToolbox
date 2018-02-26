@@ -76,6 +76,8 @@ class GIF(ThresholdModel) :
         
         self.avg_spike_shape = 0
         self.avg_spike_shape_support = 0
+        self.var_explained_dV = 0
+        self.var_explained_V = 0
         
     
     
@@ -514,6 +516,8 @@ class GIF(ThresholdModel) :
         ####################################################################################################
 
         var_explained_dV = 1.0 - np.mean((Y - np.dot(X,b))**2)/np.var(Y)
+        
+        self.var_explained_dV = var_explained_dV
         print "Percentage of variance explained (on dV/dt): %0.2f" % (var_explained_dV*100.0)
 
         
@@ -537,6 +541,7 @@ class GIF(ThresholdModel) :
                 
         var_explained_V = 1.0 - SSE / VAR
         
+        self.var_explained_V = var_explained_V
         print "Percentage of variance explained (on V): %0.2f" % (var_explained_V*100.0)
                 
                     
