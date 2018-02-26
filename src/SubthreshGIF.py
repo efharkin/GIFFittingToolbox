@@ -157,7 +157,7 @@ class SubthreshGIF(GIF) :
     ########################################################################################################  
       
          
-    def fit(self, experiment, DT_beforeSpike = 5.0):
+    def fit(self, experiment):
         
         """
         Fit the GIF model on experimental data.
